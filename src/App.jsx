@@ -1,53 +1,39 @@
-import { useState } from "react";
+import { supabase } from "./supabase"
+import { useEffect } from "react"
+useEffect(() => {
+  getData()
+}, [])
 
-function App() {
-  const [form, setForm] = useState({
-    ad: "",
-    telefon: "",
-    talep: ""
-  });
+const getData = async () => {
+  const { data } = await supabase
+    .from('demands')
+    .select('*')
 
-  const [liste, setListe] = useState([]);
+  setListe(data || [])
+}useEffect(() => {
+  getData()
+}, [])
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+const getData = async () => {
+  const { data } = await supabase
+    .from('demands')
+    .select('*')
 
-  const ekle = () => {
-    if (!form.ad || !form.telefon || !form.talep) return;
+  setListe(data || [])
+}const ekle = async () => {
+  if (!form.ad || !form.telefon || !form.talep) return
 
-    setListe([...liste, form]);
-    setForm({ ad: "", telefon: "", talep: "" });
-  };
+  await supabase.from('demands').insert([
+    {
+      title: form.talep,
+      description: form.talep,
+      city: "İstanbul",
+      username: form.ad,
+      phone: form.telefon
+    }
+  ])
 
-  return (
-    <div style={{ padding: 20 }}>
-      <h1>Talep Platformu</h1>
+  getData()
 
-      <input name="ad" placeholder="Ad Soyad" value={form.ad} onChange={handleChange} />
-      <br /><br />
-
-      <input name="telefon" placeholder="Telefon" value={form.telefon} onChange={handleChange} />
-      <br /><br />
-
-      <input name="talep" placeholder="Ne arıyorsun?" value={form.talep} onChange={handleChange} />
-      <br /><br />
-
-      <button onClick={ekle}>Talep Ekle</button>
-
-      <hr />
-
-      <h2>Talepler</h2>
-
-      {liste.map((item, i) => (
-        <div key={i} style={{ border: "1px solid #ccc", margin: 10, padding: 10 }}>
-          <b>{item.ad}</b><br />
-          {item.telefon}<br />
-          {item.talep}
-        </div>
-      ))}
-    </div>
-  );
+  setForm({ ad: "", telefon: "", talep: "" })
 }
-
-export default App;
