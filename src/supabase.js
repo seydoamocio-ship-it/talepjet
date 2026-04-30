@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 
 export const supabase = createClient(
-  "coqfxymdiuartyccthlf",
-  "MTTACP37FFWX"
+  "https://coqfxymdiuartyccthlf.supabase.co",
+  "BURAYA_ANON_PUBLIC_KEY"
 )
