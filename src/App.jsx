@@ -23,7 +23,10 @@ export default function App() {
 
   // FETCH
   const getData = async () => {
-    let q = supabase.from("demands").select("*").order("created_at", { ascending: false });
+    let q = supabase
+      .from("demands")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (filter !== "all") q = q.eq("main_category", filter);
     if (search) q = q.ilike("title", `%${search}%`);
@@ -66,6 +69,7 @@ export default function App() {
   };
 
   const sendMessage = async () => {
+    if (!selected) return;
     await supabase.from("messages").insert([
       { demand_id: selected.id, sender_name: "Ziyaretçi", message: msg }
     ]);
@@ -82,22 +86,65 @@ export default function App() {
         <div className="space-y-3">
           <select
             className="w-full p-3 border rounded-lg"
-            onChange={(e)=>setForm({...form, main_category:e.target.value})}
+            value={form.main_category}
+            onChange={(e) =>
+              setForm({ ...form, main_category: e.target.value })
+            }
           >
-            <option>Kategori</option>
+            <option value="">Kategori</option>
             <option value="emlak">Emlak</option>
             <option value="arac">Taşıt</option>
           </select>
 
-          <input placeholder="Başlık" className="input" onChange={(e)=>setForm({...form,title:e.target.value})}/>
-          <input placeholder="Açıklama" className="input" onChange={(e)=>setForm({...form,description:e.target.value})}/>
-          <input placeholder="Şehir" className="input" onChange={(e)=>setForm({...form,city:e.target.value})}/>
-          <input placeholder="Bütçe" className="input" onChange={(e)=>setForm({...form,price:e.target.value})}/>
-          <input placeholder="Ad" className="input" onChange={(e)=>setForm({...form,username:e.target.value})}/>
-          <input placeholder="Telefon" className="input" onChange={(e)=>setForm({...form,phone:e.target.value})}/>
+          <input
+            placeholder="Başlık"
+            className="w-full p-3 border rounded-lg"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+          />
+          <input
+            placeholder="Açıklama"
+            className="w-full p-3 border rounded-lg"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+          <input
+            placeholder="Şehir"
+            className="w-full p-3 border rounded-lg"
+            value={form.city}
+            onChange={(e) => setForm({ ...form, city: e.target.value })}
+          />
+          <input
+            placeholder="Bütçe"
+            className="w-full p-3 border rounded-lg"
+            value={form.price}
+            onChange={(e) => setForm({ ...form, price: e.target.value })}
+          />
+          <input
+            placeholder="Ad"
+            className="w-full p-3 border rounded-lg"
+            value={form.username}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+          />
+          <input
+            placeholder="Telefon"
+            className="w-full p-3 border rounded-lg"
+            value={form.phone}
+            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          />
 
-          <button onClick={addDemand} className="btn-primary w-full">Kaydet</button>
-          <button onClick={()=>setPage("home")} className="btn-ghost w-full">Geri</button>
+          <button
+            onClick={addDemand}
+            className="w-full bg-black text-white p-3 rounded-lg"
+          >
+            Kaydet
+          </button>
+          <button
+            onClick={() => setPage("home")}
+            className="w-full border p-3 rounded-lg"
+          >
+            Geri
+          </button>
         </div>
       </div>
     );
@@ -106,49 +153,64 @@ export default function App() {
   // ---------------- HOME ----------------
   return (
     <div className="max-w-6xl mx-auto p-6">
-
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">TalepJet</h1>
-        <button onClick={()=>setPage("add")} className="btn-primary">+ Talep</button>
+        <button
+          onClick={() => setPage("add")}
+          className="bg-black text-white px-4 py-2 rounded-lg"
+        >
+          + Talep
+        </button>
       </div>
 
       {/* FILTER */}
       <div className="flex gap-3 mb-5">
-        {["all","emlak","arac"].map(c=>(
+        {["all", "emlak", "arac"].map((c) => (
           <button
             key={c}
-            onClick={()=>setFilter(c)}
-            className={`px-4 py-2 rounded-full border ${filter===c?"bg-black text-white":"bg-white"}`}
+            onClick={() => setFilter(c)}
+            className={`px-4 py-2 rounded-full border ${
+              filter === c ? "bg-black text-white" : "bg-white"
+            }`}
           >
-            {c==="all"?"Tümü":c}
+            {c === "all" ? "Tümü" : c}
           </button>
         ))}
+
         <input
           placeholder="Ara..."
           className="ml-auto border p-2 rounded-lg"
-          onChange={(e)=>setSearch(e.target.value)}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
       {/* LIST */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {demands.map(d=>(
-<div className="container">
-  {demands.map((d) => (
-    <div className="card" key={d.id}>
-      <div className="title">{d.title}</div>
+        {demands.map((d) => (
+          <div
+            className="bg-white p-4 rounded-xl shadow cursor-pointer"
+            key={d.id}
+            onClick={() => {
+              setSelected(d);
+              getMessages(d.id);
+            }}
+          >
+            <div className="font-bold mb-2">{d.title}</div>
 
-      <div className="meta">
-        📍 {d.city} / {d.district}
+            <div className="text-sm text-gray-500 mb-2">
+              📍 {d.city}
+            </div>
+
+            <div className="mb-2">{d.description}</div>
+
+            <div className="text-blue-600 font-bold">
+              📞 {d.phone}
+            </div>
+          </div>
+        ))}
       </div>
-
-      <div>{d.description}</div>
-
-      <div className="phone">📞 {d.phone}</div>
-    </div>
-  ))}
-</div>
 
       {/* MODAL */}
       {selected && (
@@ -156,22 +218,29 @@ export default function App() {
           <div className="bg-white p-5 rounded-xl w-96">
             <div className="flex justify-between mb-3">
               <h3 className="font-bold">{selected.title}</h3>
-              <button onClick={()=>setSelected(null)}>X</button>
+              <button onClick={() => setSelected(null)}>X</button>
             </div>
 
             <div className="h-40 overflow-auto text-sm mb-2">
-              {messages.map(m=>(
-                <div key={m.id}><b>{m.sender_name}:</b> {m.message}</div>
+              {messages.map((m) => (
+                <div key={m.id}>
+                  <b>{m.sender_name}:</b> {m.message}
+                </div>
               ))}
             </div>
 
             <div className="flex gap-2">
               <input
                 value={msg}
-                onChange={(e)=>setMsg(e.target.value)}
+                onChange={(e) => setMsg(e.target.value)}
                 className="flex-1 border p-2 rounded"
               />
-              <button onClick={sendMessage} className="btn-primary">Gönder</button>
+              <button
+                onClick={sendMessage}
+                className="bg-black text-white px-3 rounded"
+              >
+                Gönder
+              </button>
             </div>
           </div>
         </div>
