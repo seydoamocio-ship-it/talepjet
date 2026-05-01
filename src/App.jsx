@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
-function App() {
-  const [page, setPage] = useState("home");
+export default function App() {
   const [demands, setDemands] = useState([]);
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState("home");
+  const [selected, setSelected] = useState(null);
 
   const [form, setForm] = useState({
     main_category: "",
@@ -15,45 +18,30 @@ function App() {
     phone: ""
   });
 
-  const [filter, setFilter] = useState("all");
+  const [msg, setMsg] = useState("");
+  const [messages, setMessages] = useState([]);
 
-  // VERİ ÇEK
+  // FETCH
   const getData = async () => {
-    let query = supabase.from("demands").select("*").order("created_at", { ascending: false });
+    let q = supabase.from("demands").select("*").order("created_at", { ascending: false });
 
-    if (filter !== "all") {
-      query = query.eq("main_category", filter);
-    }
+    if (filter !== "all") q = q.eq("main_category", filter);
+    if (search) q = q.ilike("title", `%${search}%`);
 
-    const { data } = await query;
+    const { data } = await q;
     setDemands(data || []);
   };
 
   useEffect(() => {
     getData();
-  }, [filter]);
+  }, [filter, search]);
 
-  // INPUT
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  // EKLE
+  // ADD
   const addDemand = async () => {
-    if (!form.main_category || !form.title) {
-      alert("Eksik alan");
-      return;
-    }
-
     const { error } = await supabase.from("demands").insert([form]);
+    if (error) return alert(error.message);
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    alert("KAYDEDİLDİ");
-
+    setPage("home");
     setForm({
       main_category: "",
       title: "",
@@ -63,81 +51,139 @@ function App() {
       username: "",
       phone: ""
     });
-      setPage("home");   // ⭐ BURASI ÖNEMLİ
-      getData();         // ⭐ BURASI DA
-};
-    setPage("home");
     getData();
   };
 
-  // -------- UI --------
+  // MESSAGE
+  const getMessages = async (id) => {
+    const { data } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("demand_id", id)
+      .order("created_at");
 
+    setMessages(data || []);
+  };
+
+  const sendMessage = async () => {
+    await supabase.from("messages").insert([
+      { demand_id: selected.id, sender_name: "Ziyaretçi", message: msg }
+    ]);
+    setMsg("");
+    getMessages(selected.id);
+  };
+
+  // ---------------- ADD PAGE ----------------
   if (page === "add") {
     return (
-      <div style={{ padding: 20 }}>
-        <h2>Talep Oluştur</h2>
+      <div className="max-w-xl mx-auto p-6">
+        <h2 className="text-2xl font-bold mb-6">Talep Oluştur</h2>
 
-        <select name="main_category" value={form.main_category} onChange={handleChange}>
-          <option value="">Kategori seç</option>
-          <option value="emlak">Emlak</option>
-          <option value="arac">Taşıt</option>
-        </select>
-        <br /><br />
+        <div className="space-y-3">
+          <select
+            className="w-full p-3 border rounded-lg"
+            onChange={(e)=>setForm({...form, main_category:e.target.value})}
+          >
+            <option>Kategori</option>
+            <option value="emlak">Emlak</option>
+            <option value="arac">Taşıt</option>
+          </select>
 
-        <input name="title" placeholder="Başlık" value={form.title} onChange={handleChange} />
-        <br /><br />
+          <input placeholder="Başlık" className="input" onChange={(e)=>setForm({...form,title:e.target.value})}/>
+          <input placeholder="Açıklama" className="input" onChange={(e)=>setForm({...form,description:e.target.value})}/>
+          <input placeholder="Şehir" className="input" onChange={(e)=>setForm({...form,city:e.target.value})}/>
+          <input placeholder="Bütçe" className="input" onChange={(e)=>setForm({...form,price:e.target.value})}/>
+          <input placeholder="Ad" className="input" onChange={(e)=>setForm({...form,username:e.target.value})}/>
+          <input placeholder="Telefon" className="input" onChange={(e)=>setForm({...form,phone:e.target.value})}/>
 
-        <input name="description" placeholder="Açıklama" value={form.description} onChange={handleChange} />
-        <br /><br />
-
-        <input name="city" placeholder="Şehir" value={form.city} onChange={handleChange} />
-        <br /><br />
-
-        <input name="price" placeholder="Bütçe" value={form.price} onChange={handleChange} />
-        <br /><br />
-
-        <input name="username" placeholder="Ad" value={form.username} onChange={handleChange} />
-        <br /><br />
-
-        <input name="phone" placeholder="Telefon" value={form.phone} onChange={handleChange} />
-        <br /><br />
-
-        <button onClick={addDemand}>Kaydet</button>
-        <button onClick={() => setPage("home")}>Geri</button>
+          <button onClick={addDemand} className="btn-primary w-full">Kaydet</button>
+          <button onClick={()=>setPage("home")} className="btn-ghost w-full">Geri</button>
+        </div>
       </div>
     );
   }
 
+  // ---------------- HOME ----------------
   return (
-    <div style={{ padding: 20, maxWidth: 800, margin: "auto" }}>
-      <h1>TalepJet</h1>
+    <div className="max-w-6xl mx-auto p-6">
 
-      {/* KATEGORİ */}
-      <div style={{ marginBottom: 20 }}>
-        <button onClick={() => setFilter("all")}>Tümü</button>
-        <button onClick={() => setFilter("emlak")}>Emlak</button>
-        <button onClick={() => setFilter("arac")}>Taşıt</button>
-        <button onClick={() => setPage("add")}>+ Talep</button>
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">TalepJet</h1>
+        <button onClick={()=>setPage("add")} className="btn-primary">+ Talep</button>
       </div>
 
-      {/* LİSTE */}
-      {demands.map((d) => (
-        <div key={d.id} style={{
-          border: "1px solid #ddd",
-          padding: 15,
-          marginBottom: 10,
-          borderRadius: 8
-        }}>
-          <b>{d.title}</b> ({d.main_category})
-          <div>{d.description}</div>
-          <div>📍 {d.city}</div>
-          <div>💰 {d.price}</div>
-          <div>👤 {d.username}</div>
-          <div>📞 {d.phone}</div>
+      {/* FILTER */}
+      <div className="flex gap-3 mb-5">
+        {["all","emlak","arac"].map(c=>(
+          <button
+            key={c}
+            onClick={()=>setFilter(c)}
+            className={`px-4 py-2 rounded-full border ${filter===c?"bg-black text-white":"bg-white"}`}
+          >
+            {c==="all"?"Tümü":c}
+          </button>
+        ))}
+        <input
+          placeholder="Ara..."
+          className="ml-auto border p-2 rounded-lg"
+          onChange={(e)=>setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* LIST */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {demands.map(d=>(
+          <div
+            key={d.id}
+            onClick={()=>{setSelected(d);getMessages(d.id)}}
+            className="bg-white rounded-xl p-4 shadow hover:shadow-lg transition cursor-pointer"
+          >
+            <div className="flex justify-between mb-2">
+              <h3 className="font-semibold">{d.title}</h3>
+              <span className="text-xs bg-gray-100 px-2 rounded">{d.main_category}</span>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-2">{d.description}</p>
+
+            <div className="text-sm flex justify-between">
+              <span>📍 {d.city}</span>
+              <span className="font-bold">{d.price}</span>
+            </div>
+
+            <div className="text-xs mt-2">
+              {d.username} • {d.phone}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* MODAL */}
+      {selected && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+          <div className="bg-white p-5 rounded-xl w-96">
+            <div className="flex justify-between mb-3">
+              <h3 className="font-bold">{selected.title}</h3>
+              <button onClick={()=>setSelected(null)}>X</button>
+            </div>
+
+            <div className="h-40 overflow-auto text-sm mb-2">
+              {messages.map(m=>(
+                <div key={m.id}><b>{m.sender_name}:</b> {m.message}</div>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                value={msg}
+                onChange={(e)=>setMsg(e.target.value)}
+                className="flex-1 border p-2 rounded"
+              />
+              <button onClick={sendMessage} className="btn-primary">Gönder</button>
+            </div>
+          </div>
         </div>
-      ))}
+      )}
     </div>
   );
 }
-
-export default App;
