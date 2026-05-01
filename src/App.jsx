@@ -134,29 +134,21 @@ export default function App() {
       {/* LIST */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {demands.map(d=>(
-          <div
-            key={d.id}
-            onClick={()=>{setSelected(d);getMessages(d.id)}}
-            className="bg-white rounded-xl p-4 shadow hover:shadow-lg transition cursor-pointer"
-          >
-            <div className="flex justify-between mb-2">
-              <h3 className="font-semibold">{d.title}</h3>
-              <span className="text-xs bg-gray-100 px-2 rounded">{d.main_category}</span>
-            </div>
+<div className="container">
+  {demands.map((d) => (
+    <div className="card" key={d.id}>
+      <div className="title">{d.title}</div>
 
-            <p className="text-sm text-gray-500 mb-2">{d.description}</p>
-
-            <div className="text-sm flex justify-between">
-              <span>📍 {d.city}</span>
-              <span className="font-bold">{d.price}</span>
-            </div>
-
-            <div className="text-xs mt-2">
-              {d.username} • {d.phone}
-            </div>
-          </div>
-        ))}
+      <div className="meta">
+        📍 {d.city} / {d.district}
       </div>
+
+      <div>{d.description}</div>
+
+      <div className="phone">📞 {d.phone}</div>
+    </div>
+  ))}
+</div>
 
       {/* MODAL */}
       {selected && (
